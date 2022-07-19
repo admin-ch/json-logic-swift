@@ -17,8 +17,8 @@ Pod::Spec.new do |s|
   
   s.frameworks = 'Foundation'
   
-  s.source_files = 'Sources/jsonlogic/*.swift'
-  s.module_name = 'jsonlogic'
+  s.source_files = 'Sources/JsonLogic/*.swift'
+  s.module_name = 'JsonLogic'
   s.dependency 'json-enumFork', '~> 1.2' 
 
 end

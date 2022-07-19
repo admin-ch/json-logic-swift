@@ -3,7 +3,7 @@
 //  JSON
 //
 //  Created by Christos Koninis on 09/03/2019.
-//  Licensed under LGPL
+//  Licensed under MIT
 //
 
 import Foundation
@@ -56,6 +56,9 @@ public enum JSON: Equatable {
     public init() {
         self = .Null
     }
+    public init(_ json: JSON) {
+        self = json
+    }
 
     public init(_ array: [JSON]) {
         self = .Array(array)
@@ -68,6 +71,8 @@ public enum JSON: Equatable {
     //swiftlint:disable syntactic_sugar
     public init(_ json: Any) {
         switch json {
+        case let js as JSON:
+            self = js
         case let array as Swift.Array<Any>:
             self = .Array(array.map({JSON($0)}))
         case let dictionary as Swift.Dictionary<String, Any>:
@@ -448,6 +453,8 @@ extension JSON {
         get {
             switch self {
                     //we want the nested error to propagate unaltered
+            case .Null:
+                return JSON.Null
             case .Error:
                 return self
             case let .Array(array):
@@ -484,10 +491,17 @@ extension JSON {
         get {
             switch self {
                     //we want the nested error to propagate unaltered
+            case .Null:
+                return JSON.Null
             case .Error:
                 return self
+            case let .Array(array):
+               let idx = Swift.Int(key.self) ?? -1
+               if(idx == -1) {return JSON.Null}
+                guard idx < array.count else { return JSON.Null }
+                return array[idx]
             case let .Dictionary(dictionary):
-                return dictionary[key] ?? .Error(.keyNotFound(key))
+                return dictionary[key] ?? JSON.Null
             default:
                 return .Error(.notSubscriptableType(self.type))
             }
@@ -562,47 +576,12 @@ extension JSON {
     }
 }
 
-extension Date {
-
-    static var shortFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .iso8601)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter
-    }()
-
-    //2021-06-03T09:40:51Z
-    static var fullFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .iso8601)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-        return formatter
-    }()
-    
-    func date(byAddingDays days: Int, in calendar: Calendar = .current) -> Date {
-        let result = calendar.date(byAdding: .day, value: days, to: self) ?? Date()
-        return result
-    }
-    
-    var shortFormatted: String {
-        return Date.shortFormatter.string(from: self)
-    }
-
-    var fullFormatted: String {
-        return Date.fullFormatter.string(from: self)
-    }
-}
-
 extension String {
     var date: Date? {
-        if let date = Date.shortFormatter.date(from:self) {
+        if let date = Date(dateFromShortFormatString: self) {
             return date
         }
-        if let date = Date.fromISO8601(self) {
+        if let date = Date(dateISO8601String: self) {
             return date
         }
         return nil
